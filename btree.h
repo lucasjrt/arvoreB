@@ -122,8 +122,8 @@ private:
      */
     pagina *lePagina(int idPagina) {
         pagina *pg = new pagina;
-        fseek(arquivo, (1+idPagina)*sizeof(pg), SEEK_SET);
-        fread(pg,sizeof(pg),1,arquivo);
+        fseek(arquivo, (1+idPagina)*sizeof(*pg), SEEK_SET);
+        fread(pg,sizeof(*pg),1,arquivo);
         return pg;
     }
 
@@ -132,8 +132,8 @@ private:
      */
     void salvaPagina(pagina *pg) {
         int idPagina = pg->numeroPagina;
-        fseek(arquivo, (1+idPagina)*sizeof(pg), SEEK_SET);
-        fwrite(pg,sizeof(pg),1,arquivo);
+        fseek(arquivo, (1+idPagina)*sizeof(*pg), SEEK_SET);
+        fwrite(pg,sizeof(*pg),1,arquivo);
     }
 
     /*
@@ -151,6 +151,34 @@ private:
         fseek(arquivo,0,SEEK_SET);
         fread(&cabecalhoArvore,sizeof(cabecalhoArvore),1,arquivo);
     }
+
+    void printCabecalho() {
+        printf("\nCabecalho:\n");
+        printf("raiz: %d\n", cabecalhoArvore.paginaRaiz);
+        printf("altura: %d\n", cabecalhoArvore.alturaArvore);
+        printf("nro elems: %d\n", cabecalhoArvore.numeroElementos);
+        printf("nro pags: %d\n\n", cabecalhoArvore.numeroPaginas);
+    }
+
+    void printPagina(pagina *pg) {
+        printf("\nPagina:\n");
+        printf("num elems: %d\n", pg->numeroElementos);
+        printf("numeroPagina: %d\n", pg->numeroPagina);
+        printf("chaves: {");
+        for (int i = 0; i < pg->numeroElementos; i++) {
+            printf("%d%s", pg->chaves[i], i < pg->numeroElementos - 1 ? ", "  : "}\n");
+        }
+        if (!pg->numeroElementos)
+            printf(" }\n");
+        printf("ponteiros: {");
+        for (int i = 0; i < pg->numeroElementos; i++) {
+            printf("%d%s", pg->ponteiros[i], i < pg->numeroElementos - 1 ? ", " : "}\n");
+        }
+        if (!pg->numeroElementos)
+            printf(" }\n");
+        printf("\n");
+    }
+
 };
 
 #endif	/* _BTREE_H */
