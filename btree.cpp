@@ -49,81 +49,46 @@ void btree::insereChave(int chave, int offsetRegistro) {
             // adicionar <chave,offsetRegistro> na pagina pg
             // salvar pagina: salvaPagina(pg->numeroPagina, pg);
     if (cabecalhoArvore.paginaRaiz == -1) {
-        printf("inserindo a raiz\n");
         int idRetorno;
         pagina *raiz = novaPagina(&idRetorno);
         raiz->numeroElementos++;
         raiz->chaves[0] = chave;
         raiz->ponteiros[0] = offsetRegistro;
+        leCabecalho();
         cabecalhoArvore.numeroElementos++;
         cabecalhoArvore.paginaRaiz = raiz->numeroPagina;
         cabecalhoArvore.alturaArvore = 1;
         salvaPagina(raiz);
         salvaCabecalho();
-        printPagina(raiz);
         return;
-    }
-    if (cabecalhoArvore.paginaRaiz == 1) {
-        paginaAtual = *lePagina(1);
-        if (paginaAtual.numeroElementos >= ORDEM) {
-            printf("Pagina cheia:\n");
-            printPagina(&paginaAtual);
-            // divide a pagina
-            int idRetorno, metade = 1 + (ORDEM >> 1);
-            pagina *irmao = novaPagina(&idRetorno);
-            pagina *pai = novaPagina(&idRetorno);
-            for (int i = 0; i < ORDEM >> 1; i++) {
-                irmao->chaves[i] = paginaAtual.chaves[i + metade];
-                irmao->ponteiros[i] = paginaAtual.ponteiros[i + metade];
-            }
-            cabecalhoArvore.paginaRaiz = pai->numeroPagina;
-            cabecalhoArvore.alturaArvore++;
-            cabecalhoArvore.numeroPaginas += 2;
-            pai->chaves[0] = paginaAtual.chaves[0];
-            pai->chaves[1] = irmao->chaves[0];
-            pai->ponteiros[0] = paginaAtual.numeroPagina;
-            pai->ponteiros[1] = irmao->numeroPagina;
-            paginaAtual.numeroElementos = metade;
-            irmao->numeroElementos = metade - 1;
-            pai->numeroElementos = 2;
-            salvaPagina(pai);
-            salvaPagina(irmao);
-            salvaPagina(&paginaAtual);
-            if (chave >= irmao->chaves[0])
-                paginaAtual = *irmao;
-            printCabecalho();
-            printPagina(&paginaAtual);
-            printPagina(irmao);
-            printPagina(pai);
-        }
-
-        int pos = 0;
-        for (int i = 0; i < paginaAtual.numeroElementos; i++) {
-            if (paginaAtual.chaves[i] >= chave) 
-                break;
-            pos++;
-        }
-
-        for (int i = paginaAtual.numeroElementos - 1; i >= pos; i--) {
-            paginaAtual.chaves[i+1] = paginaAtual.chaves[i];
-            paginaAtual.ponteiros[i+1] = paginaAtual.ponteiros[i];
-        }
-        paginaAtual.chaves[pos] = chave;
-        paginaAtual.ponteiros[pos] = offsetRegistro;
-        paginaAtual.numeroElementos++;
-        salvaPagina(&paginaAtual);
     }
     // senao...
     else {
-        printf("raiz lotou: %d\n", cabecalhoArvore.paginaRaiz);
-        exit(0);
+        // encontrar a página que eu vou inserir o nó
+        int i, alt = 0;
+        paginaAtual = *lePagina(cabecalhoArvore.paginaRaiz);
+        int paginasPai[cabecalhoArvore.alturaArvore];
+        // atribui a página que a chave vai ser inserida para paginaAtual
+        while(alt < cabecalhoArvore.alturaArvore - 1) {
+            paginasPai[alt] = paginaAtual.numeroPagina;
+            for (i = 0; i < paginaAtual.numeroElementos; i++)
+                if (chave < paginaAtual.chaves[i])
+                    break;
+            if (i > 0) 
+                paginaAtual = *lePagina(paginaAtual.ponteiros[i - 1]);
+            else if (i == paginaAtual.numeroElementos)
+                paginaAtual = *lePagina(i);
+            else
+                paginaAtual = *lePagina(paginaAtual.ponteiros[0]);
+            alt++;
+        }
+        insereNaPagina(chave, offsetRegistro, &paginaAtual, paginasPai, alt);
+        // se não, só insere
     }
 
     // ler pagina raiz: pagina *pg = lePagina(cabecalhoArvore.paginaRaiz);
 
     // se inserir, atualizar cabecalho
-    cabecalhoArvore.numeroElementos++;
-    salvaCabecalho();
 }
 
 void btree::removeChave(int chave) {
@@ -141,13 +106,35 @@ int btree::buscaChave(int chave) {
     paginaAtual = *lePagina(cabecalhoArvore.paginaRaiz);
     while (alt < cabecalhoArvore.alturaArvore) {
         for (i = 0; i < paginaAtual.numeroElementos - 1; i++) {
-            if (paginaAtual.chaves[i] == chave)
-                return paginaAtual.numeroPagina * ORDEM + i * sizeof(paginaAtual.chaves[i]);
-            else if (paginaAtual.chaves[i] > chave)
-                paginaAtual = *lePagina(paginaAtual.ponteiros[i - 1]);
+            if (paginaAtual.chaves[i] == chave) {
+                // se for folha
+                if (alt == cabecalhoArvore.alturaArvore - 1)
+                    return paginaAtual.ponteiros[i];
+                paginaAtual = *lePagina(paginaAtual.ponteiros[i]);
+                alt++;
+                while (alt < cabecalhoArvore.alturaArvore) {
+                    paginaAtual = *lePagina(paginaAtual.ponteiros[0]);
+                    alt++;
+                }
+                return paginaAtual.ponteiros[0];
+            }
+            else if (paginaAtual.chaves[i] > chave) {
+                if (i > 0)
+                    paginaAtual = *lePagina(paginaAtual.ponteiros[i - 1]);
+                else
+                    return -1;
+            }
         }
-        alt += 1;
+        alt++;
     }
     return -1;
+}
+
+void btree::printTree() {
+    printf("=====================================================\n");
+    printCabecalho();
+    pagina *pg = lePagina(cabecalhoArvore.paginaRaiz);
+    printFilhos(pg, 0);
+    printf("=====================================================\n");
 }
 

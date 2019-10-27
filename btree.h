@@ -7,6 +7,7 @@
  * Definicao da ordem da arvore
  */
 #define ORDEM 511
+//#define ORDEM 7
 
 /*
  * Definicao da estrutura de dados do cabecalho. Objetivo do cabecalho é apenas guardar qual numero da pagina raiz da arvore
@@ -84,6 +85,8 @@ public:
      */
     int computarTaxaOcupacao();
 
+    void printTree();
+
 private:
     /*
      * Cabecalho da arvore
@@ -105,15 +108,15 @@ private:
      * btree->novaPagina(&idpagina);) pois no retorno da funçao o idpagina tera o numero da nova pagina.
      */
     pagina *novaPagina(int *idPagina) {
-        pagina *pg = new pagina;
-        pg->numeroElementos = 0;
-        fseek(arquivo, 0, SEEK_END);
-        fwrite(pg,sizeof(pg),1,arquivo);
         leCabecalho();
         cabecalhoArvore.numeroPaginas++;
         salvaCabecalho();
+        pagina *pg = new pagina;
+        pg->numeroElementos = 0;
         pg->numeroPagina = cabecalhoArvore.numeroPaginas;
         idPagina[0] = cabecalhoArvore.numeroPaginas;
+        fseek(arquivo, 0, SEEK_END);
+        fwrite(pg,sizeof(*pg),1,arquivo);
         return pg;
     }
 
@@ -152,6 +155,79 @@ private:
         fread(&cabecalhoArvore,sizeof(cabecalhoArvore),1,arquivo);
     }
 
+    /*
+     * Trunca a pagina pg no meio (baseado no tamanho de ORDEM), copia a
+     * outra metade para nova pagina, reajusta os indices dos nos acima,
+     * e retorna a nova pagina
+     */
+    pagina *dividePagina(pagina *pg) {
+        int idRetorno, metade = 1 + (ORDEM >> 1);
+        pagina *irmao = novaPagina(&idRetorno);
+        for (int i = 0; i < ORDEM >> 1; i++) {
+            irmao->chaves[i] = pg->chaves[i + metade];
+            irmao->ponteiros[i] = pg->ponteiros[i + metade];
+        }
+        pg->numeroElementos = metade;
+        irmao->numeroElementos = metade;
+        if (ORDEM % 2 == 1)
+            irmao->numeroElementos--;
+        return irmao;
+    }
+
+    /*
+     * altura: altura da pagina pg
+    */
+    void insereNaPagina(int chave, int ponteiro, pagina *pg, int *paginasPai, int altura) {
+        if (pg->numeroElementos >= ORDEM) {
+            pagina *irmao = dividePagina(pg);
+            // atualiza pagina pai
+            if (!altura) {
+                int idRetorno;
+                pagina *pai = novaPagina(&idRetorno);
+                leCabecalho();
+                cabecalhoArvore.paginaRaiz = pai->numeroPagina;
+                cabecalhoArvore.alturaArvore++;
+                salvaCabecalho();
+                pai->chaves[0] = pg->chaves[0];
+                pai->chaves[1] = irmao->chaves[0];
+                pai->ponteiros[0] = pg->numeroPagina;
+                pai->ponteiros[1] = irmao->numeroPagina;
+                pai->numeroElementos = 2;
+                salvaPagina(pai);
+            } else {
+                if (paginasPai == NULL)
+                    printf("Warning: paginasPai is NULL.");
+                insereNaPagina(irmao->chaves[0], irmao->numeroPagina, lePagina(paginasPai[altura - 1]), paginasPai, altura - 1);
+            }
+            // fim atualiza pagina pai
+            if (chave < irmao->chaves[0])
+                insereNaPagina(chave, ponteiro, pg, paginasPai, altura);
+            else
+                insereNaPagina(chave, ponteiro, irmao, paginasPai, altura);
+            salvaPagina(irmao);
+            salvaPagina(pg);
+        } else {
+            for (int i = pg->numeroElementos - 1; i >= 0; i--) {
+                if (chave > pg->chaves[i]) {
+                    pg->chaves[i + 1] = chave;
+                    pg->ponteiros[i + 1] = ponteiro;
+                    break;
+                }
+                pg->chaves[i + 1] = pg->chaves[i];
+                pg->ponteiros[i + 1] = pg->ponteiros[i];
+                if (i == 0) {
+                    pg->chaves[0] = chave;
+                    pg->ponteiros[0] = ponteiro;
+                }
+            }
+            pg->numeroElementos++;
+            leCabecalho();
+            cabecalhoArvore.numeroElementos++;
+            salvaCabecalho();
+            salvaPagina(pg);
+        }
+    }
+
     void printCabecalho() {
         printf("\nCabecalho:\n");
         printf("raiz: %d\n", cabecalhoArvore.paginaRaiz);
@@ -179,6 +255,12 @@ private:
         printf("\n");
     }
 
+    void printFilhos(pagina *pg, int altura) {
+        printPagina(pg);
+        if(altura < cabecalhoArvore.alturaArvore - 1)
+            for (int i = 0; i < pg->numeroElementos; i++)
+                printFilhos(lePagina(pg->ponteiros[i]), altura + 1);
+    }
 };
 
 #endif	/* _BTREE_H */

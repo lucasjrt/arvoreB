@@ -1,5 +1,5 @@
 /*
- * ALUNO: COLOQUE SEU NOME AQUI
+ * ALUNO: Lucas Justino Resende Teixeira
  * File:   main.cpp
  * Created on October 24, 2019
  */
@@ -33,8 +33,8 @@ int main(int argc, char** argv) {
     printf("Taxa de ocupacao: %d%%\n", arvore->computarTaxaOcupacao());
 
     int opcao = 0;
-    while (opcao != 4) {
-        printf("\n\nMenu:\n1-inserir\n2-remover\n3-consultar\n4-sair\nOpcao: ");
+    while (opcao != 5) {
+        printf("\n\nMenu:\n1-inserir\n2-remover\n3-consultar\n4-imprimir arvore\n5-sair\nOpcao: ");
         scanf("%d",&opcao);
         switch(opcao) {
             int valor, offset;
@@ -60,6 +60,9 @@ int main(int argc, char** argv) {
                     printf("\nErro: chave %d encontrada e offset=%d.\n",valor,offset);
                 break;
             case 4:
+                arvore->printTree();
+                break;
+            case 5:
                 // exit :-)
                 break;
             default:
