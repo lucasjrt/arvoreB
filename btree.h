@@ -155,6 +155,19 @@ private:
         fread(&cabecalhoArvore,sizeof(cabecalhoArvore),1,arquivo);
     }
 
+    // void reorganizaPagina(pagina *pg, int paginasPai, int altura) {
+    //     int i;
+    //     if (altura > 1) {
+    //         pagina *pai = lePagina(paginasPai[altura - 1]);
+    //         pagina *irmaoEsquerda, *irmaoDireita;
+    //         for (i = 0; i < pai->numeroElementos; i++) {
+    //             if (pai->ponteiros[i] == pg->numeroPagina) {
+                    
+    //             }
+    //         }
+    //     }
+    // }
+
     /*
      * Trunca a pagina pg no meio (baseado no tamanho de ORDEM), copia a
      * outra metade para nova pagina, reajusta os indices dos nos acima,
@@ -181,6 +194,7 @@ private:
         if (pg->numeroElementos >= ORDEM) {
             pagina *irmao = dividePagina(pg);
             // atualiza pagina pai
+            // se a raiz estiver cheia
             if (!altura) {
                 int idRetorno;
                 pagina *pai = novaPagina(&idRetorno);
@@ -200,24 +214,47 @@ private:
                 insereNaPagina(irmao->chaves[0], irmao->numeroPagina, lePagina(paginasPai[altura - 1]), paginasPai, altura - 1);
             }
             // fim atualiza pagina pai
-            if (chave < irmao->chaves[0])
+            if (chave < irmao->chaves[0]) {
                 insereNaPagina(chave, ponteiro, pg, paginasPai, altura);
-            else
+            }
+            else 
                 insereNaPagina(chave, ponteiro, irmao, paginasPai, altura);
             salvaPagina(irmao);
             salvaPagina(pg);
         } else {
-            for (int i = pg->numeroElementos - 1; i >= 0; i--) {
-                if (chave > pg->chaves[i]) {
-                    pg->chaves[i + 1] = chave;
-                    pg->ponteiros[i + 1] = ponteiro;
-                    break;
+            pagina *p = lePagina(paginasPai[altura - 1]);
+            if (altura && chave < pg->chaves[0]){
+                int i;
+                for (i = 0; i < p->numeroElementos; i++)
+                    if (p->ponteiros[i] == pg->numeroPagina)
+                        break;
+                if (i == p->numeroElementos) {
+                    printf("Ta errado o codigo na linha %d em btree.h\n", __LINE__);
+                    printf("i: %d\n", i);
+                    scanf("%d", &i);
                 }
-                pg->chaves[i + 1] = pg->chaves[i];
-                pg->ponteiros[i + 1] = pg->ponteiros[i];
-                if (i == 0) {
-                    pg->chaves[0] = chave;
-                    pg->ponteiros[0] = ponteiro;
+                p->chaves[i] = chave;
+                for (int i = pg->numeroElementos - 1; i >= 0; i--) {
+                    pg->chaves[i + 1] = pg->chaves[i];
+                    pg->ponteiros[i + 1] = pg->ponteiros[i];
+                }
+                pg->chaves[0] = chave;
+                pg->ponteiros[0] = ponteiro;
+                salvaPagina(p);
+            }
+            else {
+                for (int i = pg->numeroElementos - 1; i >= 0; i--) {
+                    if (chave > pg->chaves[i]) {
+                        pg->chaves[i + 1] = chave;
+                        pg->ponteiros[i + 1] = ponteiro;
+                        break;
+                    }
+                    pg->chaves[i + 1] = pg->chaves[i];
+                    pg->ponteiros[i + 1] = pg->ponteiros[i];
+                    if (i == 0) {
+                        pg->chaves[0] = chave;
+                        pg->ponteiros[0] = ponteiro;
+                    }
                 }
             }
             pg->numeroElementos++;

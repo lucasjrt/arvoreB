@@ -71,13 +71,14 @@ void btree::insereChave(int chave, int offsetRegistro) {
         // atribui a página que a chave vai ser inserida para paginaAtual
         while(alt < cabecalhoArvore.alturaArvore - 1) {
             paginasPai[alt] = paginaAtual.numeroPagina;
-            for (i = 0; i < paginaAtual.numeroElementos; i++)
+            for (i = 0; i < paginaAtual.numeroElementos; i++) {
+                if(chave == paginaAtual.chaves[i])
+                    return;
                 if (chave < paginaAtual.chaves[i])
                     break;
+            }
             if (i > 0) 
                 paginaAtual = *lePagina(paginaAtual.ponteiros[i - 1]);
-            else if (i == paginaAtual.numeroElementos)
-                paginaAtual = *lePagina(i);
             else
                 paginaAtual = *lePagina(paginaAtual.ponteiros[0]);
             alt++;
@@ -90,9 +91,55 @@ void btree::insereChave(int chave, int offsetRegistro) {
 
     // se inserir, atualizar cabecalho
 }
-
+/* Casos de remoção:
+ * 1. Arvore vazia
+ * 2. Arvore com um elemento
+ * 3. Arvore com uma pagina apenas e com mais de 1 elemento
+ * 4. Pagina com mais de n/2 elementos
+ * 5. Pagina com n/2 elementos com irmao tendo mais de n/2 elementos
+ * 6. Pagina com n/2 elementos com irmao tendo n/2 elementos
+ */
 void btree::removeChave(int chave) {
-
+    // leCabecalho();
+    // if (!cabecalhoArvore.numeroElementos)
+    //     return;
+    // if (cabecalhoArvore.numeroElementos == 1) {
+    //     cabecalhoArvore.paginaRaiz = -1;
+    //     cabecalhoArvore.alturaArvore = 0;
+    //     cabecalhoArvore.numeroElementos = 0;
+    //     cabecalhoArvore.numeroPaginas = 0;
+    //     salvaCabecalho();
+    //     return;
+    // }
+    // paginaAtual = *lePagina(cabecalhoArvore.paginaRaiz);
+    // int paginasPai[cabecalhoArvore.alturaArvore];
+    // while(alt < cabecalhoArvore.alturaArvore - 1) {
+    //     paginasPai[alt] = paginaAtual.numeroPagina;
+    //     for (i = 0; i < paginaAtual.numeroElementos; i++)
+    //         if (chave < paginaAtual.chaves[i])
+    //             break;
+    //     if (i > 0) 
+    //         paginaAtual = *lePagina(paginaAtual.ponteiros[i - 1]);
+    //     else if (i == paginaAtual.numeroElementos)
+    //         paginaAtual = *lePagina(i);
+    //     else
+    //         paginaAtual = *lePagina(paginaAtual.ponteiros[0]);
+    //     alt++;
+    // }
+    // for (i = 0; i < paginaAtual.numeroElementos; i++)
+    //     if (chave == paginaAtual.chaves[i])
+    //         break;
+    // if (i == paginaAtual.numeroElementos)
+    //     return;
+    // for (i; i < paginaAtual.numeroElementos; i++) {
+    //     paginaAtual.chaves[i] = paginaAtual.chaves[i+1];
+    //     paginaAtual.ponteiros[i] = paginaAtual.ponteiros[i+1];
+    // }
+    // paginaAtual.numeroElementos--;
+    // if (paginaAtual.numeroElementos < (ORDEM >> 1) && cabecalhoArvore.alturaArvore > 1) {
+    //     pagina *pai = lePagina(paginasPai[alt]);
+    //     reorganizaPagina(&paginaAtual, paginasPai, alt);
+    // }
     // se remover, atualizar cabecalho
     if (true) {
         cabecalhoArvore.numeroElementos--;
@@ -119,8 +166,10 @@ int btree::buscaChave(int chave) {
                 return paginaAtual.ponteiros[0];
             }
             else if (paginaAtual.chaves[i] > chave) {
-                if (i > 0)
+                if (i > 0) {
                     paginaAtual = *lePagina(paginaAtual.ponteiros[i - 1]);
+                    break;
+                }
                 else
                     return -1;
             }
