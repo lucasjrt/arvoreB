@@ -9,6 +9,8 @@
 
 #include "btree.cpp"
 
+#define NUMELEMS 30
+
 int main(int argc, char** argv) {
 
     // iniciar a semente aleatorio
@@ -20,8 +22,8 @@ int main(int argc, char** argv) {
     printf("Use essas chaves como exemplos de consultas que devem ser encontradas: ");
 
     // inserir numeros aleatorios na arvore
-    for (int i = 0; i < 10000; i++) {
-        int valor = rand() % 1000000 + 1;
+    for (int i = 0; i < NUMELEMS; i++) {
+        int valor = rand() % (100 * NUMELEMS + 1);
         arvore->insereChave(valor,valor+1);
         if (i % 1000 == 0)
             printf("%d, ",valor);
@@ -33,8 +35,9 @@ int main(int argc, char** argv) {
     printf("Taxa de ocupacao: %d%%\n", arvore->computarTaxaOcupacao());
 
     int opcao = 0;
-    while (opcao != 5) {
-        printf("\n\nMenu:\n1-inserir\n2-remover\n3-consultar\n4-imprimir arvore\n5-sair\nOpcao: ");
+    while (opcao != 6) {
+        printf("\n\nMenu:\n1-inserir\n2-remover\n3-consultar\n4-imprimir arvore\n");
+        printf("5-imprimir pagina\n6-sair\nOpcao: ");
         scanf("%d",&opcao);
         switch(opcao) {
             int valor, offset;
@@ -63,6 +66,11 @@ int main(int argc, char** argv) {
                 arvore->printTree();
                 break;
             case 5:
+                int id;
+                printf("ID pagina: ");
+                scanf("%d", &id);
+                arvore->printPagina(id);
+            case 6:
                 // exit :-)
                 break;
             default:
